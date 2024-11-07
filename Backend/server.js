@@ -1,19 +1,26 @@
 const express = require('express');
-const dotenv = require('dot-env');
+const dotenv = require('dotenv');  
 const connectDB = require('./dbconfig/db');
-const router = express.Router();
+const searchRouter  = require('./router/search');
 
-dotenv.config();
+// Connect to the database
+connectDB();
+
+dotenv.config(); // Loading environment variables
 const app = express();
 
 
-app.use(express.json);
-app.use(express.urlencoded({extended: true}));
 
+// Middleware for JSON parsing and URL encoding
+app.use(express.json());  // Corrected usage of express.json
+app.use(express.urlencoded({ extended: true }));  // Corrected usage of express.urlencoded
 
-const PORT = process.env.PORT;
-app.listen(PORT, () => console.log(`Sever Started at ${PORT}`));
+// Route for product searching
+app.use('/api/products', searchRouter); // Navigating to search router for product searching
 
+// Set port with a fallback to 3000
+const PORT = process.env.PORT || 3000;
 
-
-
+app.listen(PORT, () => {
+    console.log(`Server started at http://localhost:${PORT}`);
+});
