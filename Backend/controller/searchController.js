@@ -26,7 +26,8 @@ exports.searchProduct = async (req,res) =>{
         const productData = await Product.find(query);
 
         if(productData.length > 0){
-            await redisClient.setEx(cacheKey, 3600, JSON.stringify(productData)); // adding product info in redis cache for 1 hr
+           await redisClient.setEx(cacheKey, 3600, JSON.stringify(productData)); // adding product info in redis cache for 1 hr
+
             res.json(productData);
         }else{
         // if product is not available
