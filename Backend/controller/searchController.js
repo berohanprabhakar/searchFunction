@@ -2,41 +2,44 @@ const Product = require('../model/ProductModel');
 const redisClient = require('../dbconfig/redisconfig');
 
 
-exports.searchProduct = async (req,res) =>{
+exports.searchProduct = async (req, res) => {
     try {
-        const {title, description} = req.query;
+        const { searchText } = req.query; 
 
-        const cacheKey = JSON.stringify({ title, description });
+        if (!searchText) {
+            return res.status(400).json({ message: "Search text is required" });
+        }
 
-        // finding in redis Cache if response is present
+
+        const cacheKey = JSON.stringify({ searchText });
+
+
         const cachedData = await redisClient.get(cacheKey);
-
-        // if present then return from there
-        if(cachedData){
+        if (cachedData) {
             return res.json(JSON.parse(cachedData));
         }
 
-        // not present then make query in database and add in redis as a key , value pair 
-        // making query
-        const query = {}
-        if(title) query.title = { $regex : title, $options : 'i'}; // case sensitive search
-        if(description) query.description = description;
+
+        const query = {
+            $or: [
+                { title: { $regex: searchText, $options: 'i' } }, 
+                { description: { $regex: searchText, $options: 'i' } } 
+            ]
+        };
+
         
-        // finding product in db
-        const productData = await Product.find(query);
+        const productData = await Product.find(query).lean(); 
 
-        if(productData.length > 0){
-           await redisClient.setEx(cacheKey, 3600, JSON.stringify(productData)); // adding product info in redis cache for 1 hr
-
+        if (productData.length > 0) {
+           
+            await redisClient.setEx(cacheKey, 3600, JSON.stringify(productData));
             res.json(productData);
-        }else{
-        // if product is not available
-        res.status(404).json({message : "Not Avaialable"});
+        } else {
+           
+            res.status(404).json({ message: "Not Available" });
         }
-
-
     } catch (error) {
         console.error(error);
-        res.status(500).json({error : "Server Error"});
+        res.status(500).json({ error: "Server Error" });
     }
-}
+};
